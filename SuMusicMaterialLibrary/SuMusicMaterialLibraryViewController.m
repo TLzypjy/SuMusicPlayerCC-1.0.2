@@ -32,7 +32,7 @@ static NSUInteger const SuMusicGridColumns = 3;     // 三列
 static CGFloat const SuMusicHeaderHeight = 56;      // 导航条高度
 static CGFloat const SuMusicHeaderSeperatorGap = 8; // 分隔线与导航条的间距
 static CGFloat const SuMusicHeaderSeperatorHeight = 0.5;
-static CGFloat const SuMusicSideButtonWidth = 90;   // 左右按钮宽度（含 16pt 内边距）
+static CGFloat const SuMusicSideButtonHitWidth = 76; // 左右按钮点击区宽度（文字按对齐贴 16pt 边距）
 
 static NSString * const SuMusicCellReuseIdentifier = @"SuMusicMaterialCell";
 
@@ -101,14 +101,12 @@ static NSArray<NSString *> *SuMusicImportVideoExtensions(void) {
     UIView *header = [[UIView alloc] init];
     header.backgroundColor = [UIColor systemBackgroundColor];
 
-    // 左：关闭（#007AFF，17pt regular，左边距 16pt）
+    // 左：关闭（#007AFF，17pt regular，文字左边距 16pt）
     UIButton *close = [UIButton buttonWithType:UIButtonTypeSystem];
-    UIButtonConfiguration *closeConfig = [UIButtonConfiguration plainButtonConfiguration];
-    closeConfig.contentInsets = NSDirectionalEdgeInsetsMake(0, 16, 0, 0);
-    closeConfig.title = @"关闭";
-    closeConfig.baseForegroundColor = SuMusicTintColor();
-    closeConfig.titleFont = [UIFont systemFontOfSize:17];
-    close.configuration = closeConfig;
+    [close setTitle:@"关闭" forState:UIControlStateNormal];
+    close.titleLabel.font = [UIFont systemFontOfSize:17];
+    [close setTitleColor:SuMusicTintColor() forState:UIControlStateNormal];
+    close.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
     [close addTarget:self action:@selector(handleClose:) forControlEvents:UIControlEventTouchUpInside];
     [header addSubview:close];
 
@@ -119,14 +117,12 @@ static NSArray<NSString *> *SuMusicImportVideoExtensions(void) {
     title.textColor = [UIColor labelColor];
     [header addSubview:title];
 
-    // 右：导入（#007AFF，17pt regular，右边距 16pt）
+    // 右：导入（#007AFF，17pt regular，文字右边距 16pt）
     UIButton *import = [UIButton buttonWithType:UIButtonTypeSystem];
-    UIButtonConfiguration *importConfig = [UIButtonConfiguration plainButtonConfiguration];
-    importConfig.contentInsets = NSDirectionalEdgeInsetsMake(0, 0, 0, 16);
-    importConfig.title = @"导入";
-    importConfig.baseForegroundColor = SuMusicTintColor();
-    importConfig.titleFont = [UIFont systemFontOfSize:17];
-    import.configuration = importConfig;
+    [import setTitle:@"导入" forState:UIControlStateNormal];
+    import.titleLabel.font = [UIFont systemFontOfSize:17];
+    [import setTitleColor:SuMusicTintColor() forState:UIControlStateNormal];
+    import.contentHorizontalAlignment = UIControlContentHorizontalAlignmentRight;
     [import addTarget:self action:@selector(handleImport:) forControlEvents:UIControlEventTouchUpInside];
     [header addSubview:import];
 
@@ -167,11 +163,11 @@ static NSArray<NSString *> *SuMusicImportVideoExtensions(void) {
     CGFloat width = self.view.bounds.size.width;
     CGFloat safeTop = self.view.safeAreaInsets.top;
 
-    // 导航条：安全区下方，高 56pt
+    // 导航条：安全区下方，高 56pt；左右按钮文字各距边缘 16pt
     self.headerView.frame = CGRectMake(0, safeTop, width, SuMusicHeaderHeight);
-    self.closeButton.frame = CGRectMake(0, 0, SuMusicSideButtonWidth, SuMusicHeaderHeight);
+    self.closeButton.frame = CGRectMake(16, 0, SuMusicSideButtonHitWidth, SuMusicHeaderHeight);
     self.titleLabel.frame = CGRectMake(width / 2 - 80, 0, 160, SuMusicHeaderHeight);
-    self.importButton.frame = CGRectMake(width - SuMusicSideButtonWidth, 0, SuMusicSideButtonWidth, SuMusicHeaderHeight);
+    self.importButton.frame = CGRectMake(width - SuMusicSideButtonHitWidth - 16, 0, SuMusicSideButtonHitWidth, SuMusicHeaderHeight);
 
     // 分隔线：导航条下方 8pt，0.5pt
     CGFloat separatorY = safeTop + SuMusicHeaderHeight + SuMusicHeaderSeperatorGap;
