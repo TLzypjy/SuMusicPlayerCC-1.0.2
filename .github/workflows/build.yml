@@ -30,6 +30,11 @@ jobs:
           # 下载最新 iPhoneOS SDK 到 $THEOS/sdks（现代 Theos 用 install-sdk）
           sudo THEOS=/opt/theos GITHUB_TOKEN="$GITHUB_TOKEN" /opt/theos/bin/install-sdk latest
 
+      - name: Install ldid
+        run: brew install ldid
+        # Theos 打包 tweak dylib 时调用 ldid 做签名，macOS runner 默认 PATH 中没有该工具，
+        # 缺失会导致构建在 Signing 阶段报 "ldid: command not found"（Error 127）。
+
       - name: Build tweak
         run: make CONFIG=release
 
