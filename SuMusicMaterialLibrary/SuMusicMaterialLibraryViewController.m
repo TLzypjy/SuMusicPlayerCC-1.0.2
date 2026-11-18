@@ -35,6 +35,17 @@ static NSString * const SuMusicCellReuseIdentifier = @"SuMusicMaterialCell";
 @property (nonatomic, strong) UICollectionViewFlowLayout *flowLayout;
 @property (nonatomic, strong) NSArray<SuMusicMaterial *> *materials;
 
+// 内部辅助方法（在实现文件内使用，显式声明以确保选择器可见性）
+- (void)buildHeader;
+- (void)buildCollectionView;
+- (void)updateTitleCount;
+- (BOOL)isMaterialSelected:(SuMusicMaterial *)material;
+- (void)toggleSelection:(SuMusicMaterial *)material;
+- (void)finishSelection;
+- (NSString *)uniqueFilenameInDirectory:(NSString *)directory forSourceURL:(NSURL *)sourceURL;
+- (void)handleClose:(id)sender;
+- (void)handleImport:(id)sender;
+
 @end
 
 @implementation SuMusicMaterialLibraryViewController
@@ -182,9 +193,13 @@ static NSString * const SuMusicCellReuseIdentifier = @"SuMusicMaterialCell";
 
 - (void)toggleSelection:(SuMusicMaterial *)material {
     NSMutableArray<SuMusicMaterial *> *selected = self.selectedMaterials;
-    NSUInteger index = [selected indexOfObjectPassingBlock:^BOOL(SuMusicMaterial *m) {
-        return [m.filePath isEqualToString:material.filePath];
-    }];
+    NSUInteger index = NSNotFound;
+    for (NSUInteger i = 0; i < selected.count; i++) {
+        if ([[selected[i] filePath] isEqualToString:material.filePath]) {
+            index = i;
+            break;
+        }
+    }
     if (index != NSNotFound) {
         [selected removeObjectAtIndex:index];
     } else {
@@ -205,8 +220,8 @@ static NSString * const SuMusicCellReuseIdentifier = @"SuMusicMaterialCell";
     // 复用现有 UIDocumentPickerViewController 流程，允许导入图片与视频
     UIDocumentPickerViewController *picker =
     [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[
-        UTTypeImage,
-        UTTypeMovie,
+        UTTypeImage.identifier,
+        UTTypeMovie.identifier,
     ] inMode:UIDocumentPickerModeImport];
     picker.delegate = self;
     [self presentViewController:picker animated:YES completion:nil];
