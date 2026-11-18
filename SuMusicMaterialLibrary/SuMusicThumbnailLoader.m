@@ -313,7 +313,6 @@ static NSString *SuMusicShortPathHash(NSString *path) {
         UIRectFill(CGRectMake(0, 0, 8, 8));
         placeholder = UIGraphicsGetImageFromCurrentImageContext();
         UIGraphicsEndImageContext();
-        placeholder = [placeholder imageWithRenderingMode:UIImageRenderingModeDefault];
     });
     return placeholder;
 }
