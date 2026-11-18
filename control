@@ -1,0 +1,9 @@
+Package: com.susu.sumusicplayercc
+Name: SuMusicPlayerCC
+Version: 1.0.2
+Architecture: iphoneos-arm64
+Section: Utility
+Description: 控制中心音乐播放器插件 — 素材库网格改造版
+ SuMusicPlayerCC 将控制中心扩展为音乐播放器，并把「媒体文件选择」改造为独立的三列素材库页面，支持视频/图片缩略图网格、选中与导入。
+Maintainer: SuMusic
+Depends: com.opa334.ccsupport

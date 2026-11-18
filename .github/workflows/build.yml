@@ -1,0 +1,40 @@
+name: Build SuMusicPlayerCC 1.0.2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: build-sumusicplayercc
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Theos build (iphoneos-arm64)
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Theos
+        run: |
+          sudo git clone --depth=1 https://github.com/theos/theos.git /opt/theos
+          sudo ln -s /opt/theos /theos
+          # 下载 iOS / macOS SDK 到 $THEOS/sdks
+          sudo /opt/theos/bin/theos-build
+          echo "THEOS=/opt/theos" >> "$GITHUB_ENV"
+          echo "PATH=/opt/theos/bin:$PATH" >> "$GITHUB_ENV"
+
+      - name: Build tweak
+        run: make CONFIG=release
+
+      - name: Show artifact
+        run: ls -lh packages/
+
+      - name: Upload deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: com.susu.sumusicplayercc_1.0.2_iphoneos-arm64
+          path: packages/*.deb
+          if-no-files-found: error

@@ -1,0 +1,15 @@
+# Theos 构建产物
+packages/
+build/
+*.deb
+*.dylib
+
+# Theos 本地配置
+.theos/
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
