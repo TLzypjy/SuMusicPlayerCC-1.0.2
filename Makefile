@@ -38,5 +38,10 @@ include $(THEOS_MAKE_PATH)/tweak.mk
 # 打包为 deb
 SuMusicPlayerCC_PACKAGE_TYPE = deb
 
+# 固定 deb 版本号为纯净的 1.0.2。
+# 不设置时 Theos 默认使用「基础版本-构建号+构建名」格式（如 1.0.2-1+debug），
+# 会导致产物文件名变为 com.susu.sumusicplayercc_1.0.2-1+debug_iphoneos-arm64.deb。
+PACKAGE_VERSION = 1.0.2
+
 after-install::
 	@echo "SuMusicPlayerCC 1.0.2 installed."
