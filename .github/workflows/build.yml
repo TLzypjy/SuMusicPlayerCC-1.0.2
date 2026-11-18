@@ -12,7 +12,9 @@ concurrency:
 jobs:
   build:
     name: Theos build (iphoneos-arm64)
-    runs-on: macos-latest
+    # macos-latest（arm64）当前容量紧张，多次排队 15 分钟后被取消；
+    # 改用 Intel x64 池（macos-15-intel），Theos 交叉编译目标不受宿主架构影响。
+    runs-on: macos-15-intel
     steps:
       - name: Checkout
         uses: actions/checkout@v4
