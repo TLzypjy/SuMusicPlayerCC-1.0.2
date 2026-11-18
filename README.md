@@ -12,7 +12,7 @@ SuMusicPlayerCC_1.0.2/
 ├── control                                 # deb 元数据，Version=1.0.2
 ├── SuMusicPlayerCC.plist                   # 新 dylib 过滤器（ControlCenter + Preferences）
 ├── layout/                                 # 原 1.0.1 包文件原样保留（bundle + 两个 hook dylib）
-│   └── var/jb/Library/...
+│   └── Library/...                         # 按未加前缀路径组织，rootless scheme 统一加 var/jb
 ├── SuMusicMaterialLibrary/
 │   ├── SuMusicMaterial.h / .m              # 素材数据模型 + 目录枚举（不排序，沿用原顺序）
 │   ├── SuMusicThumbnailLoader.h / .m       # 缩略图：串行队列生成 + NSCache + 磁盘缓存（mtime 键）
