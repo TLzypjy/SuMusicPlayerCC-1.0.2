@@ -29,6 +29,12 @@ SuMusicPlayerCC_DEPENDENT_PACKAGES = com.opa334.ccsupport
 
 include $(THEOS)/makefiles/common.mk
 
+# 引入 tweak 构建规则。这是 Theos tweak 项目的必需步骤：
+# 它会加载 master/tweak.mk，把 internal-all 与 $(TWEAK_NAME).all.tweak.variables
+# 绑定，从而让 `make all` 真正触发 Tweak.xm 的编译。
+# 缺失这一行会导致 "make: Nothing to be done for 'all'"（无任何编译发生）。
+include $(THEOS_MAKE_PATH)/tweak.mk
+
 # 打包为 deb
 SuMusicPlayerCC_PACKAGE_TYPE = deb
 

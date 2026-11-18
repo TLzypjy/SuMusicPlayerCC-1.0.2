@@ -19,7 +19,10 @@ jobs:
 
       - name: Install Theos
         run: |
-          sudo git clone --depth=1 https://github.com/theos/theos.git /opt/theos
+          # 必须带 --recurse-submodules：theos 通过子模块管理 vendor/include、vendor/lib 等，
+          # 缺失会导致 before-all 的 vendor 检查直接报错终止。
+          # --shallow-submodules 让子模块也做浅克隆，加快速度。
+          sudo git clone --depth=1 --recurse-submodules --shallow-submodules https://github.com/theos/theos.git /opt/theos
           # GitHub Actions macOS 根文件系统只读，无法创建 /theos 软链；
           # 改用 THEOS 环境变量指向 /opt/theos（Theos 原生支持）。
           echo "THEOS=/opt/theos" >> "$GITHUB_ENV"
