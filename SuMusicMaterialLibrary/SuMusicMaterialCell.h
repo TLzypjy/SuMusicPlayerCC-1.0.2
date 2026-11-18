@@ -15,8 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface SuMusicMaterialCell : UICollectionViewCell
 
-/// 素材对象（由数据源绑定）
-@property (nonatomic, strong) SuMusicMaterial *material;
+/// 素材对象（由数据源绑定；复用/取消时可能为 nil）
+@property (nonatomic, strong, nullable) SuMusicMaterial *material;
 
 // 说明：selected 由 UICollectionViewCell 继承提供，子类不再重复声明，
 // 避免与父类属性声明冲突（-Wproperty-attribute-mismatch / -Wobjc-property-synthesis）。
