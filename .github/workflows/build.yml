@@ -36,7 +36,9 @@ jobs:
         # 缺失会导致构建在 Signing 阶段报 "ldid: command not found"（Error 127）。
 
       - name: Build tweak
-        run: make CONFIG=release
+        # Theos 的 `make all` 只编译 tweak dylib；deb 包需要 `make package` 才会生成到
+        # packages/ 目录（package 依赖 all，会自动先完成编译）。
+        run: make CONFIG=release package
 
       - name: Show artifact
         run: ls -lh packages/
