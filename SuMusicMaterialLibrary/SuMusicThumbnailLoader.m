@@ -20,10 +20,10 @@ static NSString * SuMusicThumbCacheKey(NSString *path, CGFloat size) {
 static NSString * SuMusicThumbDiskName(NSString *path, CGFloat size) {
     NSString *key = SuMusicThumbCacheKey(path, size);
     const char *bytes = [key UTF8String];
-    unsigned char digest[CC_MD5_DIGEST_LENGTH];
-    CC_MD5(bytes, (CC_LONG)strlen(bytes), digest);
-    NSMutableString *hex = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
-    for (int i = 0; i < CC_MD5_DIGEST_LENGTH; i++) {
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(bytes, (CC_LONG)strlen(bytes), digest);
+    NSMutableString *hex = [NSMutableString stringWithCapacity:CC_SHA256_DIGEST_LENGTH * 2];
+    for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
         [hex appendFormat:@"%02x", digest[i]];
     }
     return [hex stringByAppendingString:@".jpg"];
@@ -162,9 +162,7 @@ static NSString * SuMusicThumbDiskName(NSString *path, CGFloat size) {
     }
 
     AVAssetImageGenerator *generator = [AVAssetImageGenerator assetImageGeneratorWithAsset:asset];
-    generator.requestedTimeDataType = AVAssetImageGeneratorSeconds;
-    // 取靠近 0s 的关键帧作为首帧
-    generator.requestedFrameAtTime = CMTimeMake(0, 1);
+    // 取靠近 0s 的首帧；仅设置 maximumSize，使用最基础的 copyCGImageAtTime: 保证兼容性
     generator.maximumSize = CGSizeMake(size * [UIScreen mainScreen].scale, size * [UIScreen mainScreen].scale);
 
     NSError *error = nil;
@@ -196,7 +194,7 @@ static NSString * SuMusicThumbDiskName(NSString *path, CGFloat size) {
     NSError *error = nil;
     [fm createDirectoryAtPath:self.diskCacheDirectory withIntermediateDirectories:YES attributes:nil error:&error];
     NSData *jpeg = UIImageJPEGRepresentation(image, 0.85);
-    [fm createFileAtPath:path contents:jpeg attributes:nil error:&error];
+    [jpeg writeToFile:path atomically:YES];
 }
 
 - (void)clearCaches {
