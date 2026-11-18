@@ -27,6 +27,13 @@ SuMusicPlayerCC_RESOURCE_NAMES =
 # 依赖（与原始 deb 一致）
 SuMusicPlayerCC_DEPENDENT_PACKAGES = com.opa334.ccsupport
 
+# 固定 deb 版本号为纯净的 1.0.2。
+# 注意：必须在 include common.mk 之前设置——Theos 的 package.mk 是在 common.mk
+# 加载时解析的，此时会通过 $(value PACKAGE_VERSION) 把版本值固定下来。
+# 写在 include 之后不会被捕获，版本会回退为默认的「基础版本-构建号+构建名」格式
+# （如 1.0.2-1+debug，其中 +debug 来自 PACKAGE_BUILDNAME 的默认值）。
+PACKAGE_VERSION = 1.0.2
+
 include $(THEOS)/makefiles/common.mk
 
 # 引入 tweak 构建规则。这是 Theos tweak 项目的必需步骤：
@@ -37,11 +44,6 @@ include $(THEOS_MAKE_PATH)/tweak.mk
 
 # 打包为 deb
 SuMusicPlayerCC_PACKAGE_TYPE = deb
-
-# 固定 deb 版本号为纯净的 1.0.2。
-# 不设置时 Theos 默认使用「基础版本-构建号+构建名」格式（如 1.0.2-1+debug），
-# 会导致产物文件名变为 com.susu.sumusicplayercc_1.0.2-1+debug_iphoneos-arm64.deb。
-PACKAGE_VERSION = 1.0.2
 
 after-install::
 	@echo "SuMusicPlayerCC 1.0.2 installed."
