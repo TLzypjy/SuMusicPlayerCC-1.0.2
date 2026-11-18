@@ -86,8 +86,11 @@ SuMusicPlayerCC_1.0.2/
 ## 构建（GitHub Actions）
 
 推送到 main 后 CI 自动构建：`make CONFIG=release package`（Theos，macOS runner，
-arm64 + arm64e，rootless /var/jb）。产物 artifact：
-`com.susu.sumusicplayercc_1.0.2_iphoneos-arm64`（packages/*.deb）。
+arm64 + arm64e）。Makefile 显式 `export THEOS_PACKAGE_SCHEME = rootless`——
+缺失时 Theos 按 rootful 处理，dylib/plist 会被 stage 到根路径 `Library/...`，
+rootless 设备安装直接报「error creating directory: 文件系统只读」。
+产物 artifact：`com.susu.sumusicplayercc_1.0.2_iphoneos-arm64`（packages/*.deb），
+data.tar 内所有文件必须都在 `var/jb/` 之下。
 
 本地若有 Theos 环境可执行：
 
