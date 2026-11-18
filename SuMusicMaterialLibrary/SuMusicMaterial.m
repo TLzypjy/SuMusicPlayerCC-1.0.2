@@ -10,6 +10,12 @@ static NSString * const SuMusicMaterialRootDirectory = @"/var/mobile/Library/SuM
 static NSString * const SuMusicVideoDirectoryName = @"Video";
 static NSString * const SuMusicImageDirectoryName = @"Image";
 
+// 类扩展：头文件中 fileURL 对外为 readonly，工厂方法内部需要赋值，
+// 这里在实现文件内重新声明为 readwrite（对外接口仍保持 readonly）。
+@interface SuMusicMaterial ()
+@property (nonatomic, strong, readwrite) NSURL *fileURL;
+@end
+
 @implementation SuMusicMaterial
 
 + (instancetype)materialWithURL:(NSURL *)url type:(SuMusicMaterialType)type {

@@ -23,6 +23,10 @@ static NSString * const SuMusicCellReuseIdentifier = @"SuMusicMaterialCell";
                                                     UICollectionViewDelegate,
                                                     UIDocumentPickerDelegate>
 
+// 头文件中 selectedMaterials 对外为 readonly，内部需要直接赋值，
+// 这里在实现文件内重新声明为 readwrite（对外接口仍保持 readonly）。
+@property (nonatomic, strong, readwrite) NSMutableArray<SuMusicMaterial *> *selectedMaterials;
+
 @property (nonatomic, strong) UIView *headerView;
 @property (nonatomic, strong) UIButton *closeButton;
 @property (nonatomic, strong) UILabel *titleLabel;
