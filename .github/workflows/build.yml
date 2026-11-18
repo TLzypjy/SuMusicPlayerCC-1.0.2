@@ -20,11 +20,12 @@ jobs:
       - name: Install Theos
         run: |
           sudo git clone --depth=1 https://github.com/theos/theos.git /opt/theos
-          sudo ln -s /opt/theos /theos
-          # 下载 iOS / macOS SDK 到 $THEOS/sdks
-          sudo /opt/theos/bin/theos-build
+          # GitHub Actions macOS 根文件系统只读，无法创建 /theos 软链；
+          # 改用 THEOS 环境变量指向 /opt/theos（Theos 原生支持）。
           echo "THEOS=/opt/theos" >> "$GITHUB_ENV"
           echo "PATH=/opt/theos/bin:$PATH" >> "$GITHUB_ENV"
+          # 下载 iOS / macOS SDK 到 $THEOS/sdks
+          sudo THEOS=/opt/theos /opt/theos/bin/theos-build
 
       - name: Build tweak
         run: make CONFIG=release
