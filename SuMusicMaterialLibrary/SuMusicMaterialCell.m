@@ -7,10 +7,17 @@
 #import "SuMusicMaterial.h"
 #import "SuMusicThumbnailLoader.h"
 
-// 颜色常量（与素材库目标样式一致）
-static UIColor * const SuMusicCaptionBackground = [UIColor colorWithRed:0.749 green:0.749 blue:0.769 alpha:1.0]; // #BFBFC4
-static UIColor * const SuMusicDotUnselected = [UIColor colorWithRed:0.820 green:0.820 blue:0.839 alpha:1.0]; // #D1D1D6
-static UIColor * const SuMusicDotSelected = [UIColor colorWithRed:0.039 green:0.518 blue:1.000 alpha:1.0]; // #0A84FF
+// 颜色（与素材库目标样式一致）。UIColor 为运行时对象，无法作为编译期常量，
+// 用函数惰性创建，避免 'initializer element is not a compile-time constant'。
+static UIColor *SuMusicCaptionBackground(void) {
+    return [UIColor colorWithRed:0.749 green:0.749 blue:0.769 alpha:1.0]; // #BFBFC4
+}
+static UIColor *SuMusicDotUnselected(void) {
+    return [UIColor colorWithRed:0.820 green:0.820 blue:0.839 alpha:1.0]; // #D1D1D6
+}
+static UIColor *SuMusicDotSelected(void) {
+    return [UIColor colorWithRed:0.039 green:0.518 blue:1.000 alpha:1.0]; // #0A84FF
+}
 
 @interface SuMusicMaterialCell ()
 
@@ -73,7 +80,7 @@ static UIColor * const SuMusicDotSelected = [UIColor colorWithRed:0.039 green:0.
 
     // 文件名胶囊（底部）
     self.captionView = [[UIView alloc] init];
-    self.captionView.backgroundColor = SuMusicCaptionBackground;
+    self.captionView.backgroundColor = SuMusicCaptionBackground();
     self.captionView.layer.cornerRadius = 8;
     self.captionView.layer.masksToBounds = YES;
     [self.contentView addSubview:self.captionView];
@@ -82,14 +89,14 @@ static UIColor * const SuMusicDotSelected = [UIColor colorWithRed:0.039 green:0.
     self.captionLabel.textColor = [UIColor whiteColor];
     self.captionLabel.font = [UIFont systemFontOfSize:10 weight:UIFontWeightRegular];
     self.captionLabel.numberOfLines = 1;
-    self.captionLabel.lineBreakMode = NSLineBreakModeByTruncatingTail;
+    self.captionLabel.lineBreakMode = NSLineBreakByTruncatingTail;
     [self.captionView addSubview:self.captionLabel];
 
     // 选中圆点（缩略图右下角）
     self.selectionDot = [[UIView alloc] init];
     self.selectionDot.layer.cornerRadius = 6;
     self.selectionDot.layer.masksToBounds = YES;
-    self.selectionDot.backgroundColor = SuMusicDotUnselected;
+    self.selectionDot.backgroundColor = SuMusicDotUnselected();
     [self.contentView addSubview:self.selectionDot];
 }
 
@@ -190,7 +197,7 @@ static UIColor * const SuMusicDotSelected = [UIColor colorWithRed:0.039 green:0.
 }
 
 - (void)updateSelectionDot {
-    self.selectionDot.backgroundColor = self.selected ? SuMusicDotSelected : SuMusicDotUnselected;
+    self.selectionDot.backgroundColor = self.selected ? SuMusicDotSelected() : SuMusicDotUnselected();
 }
 
 @end

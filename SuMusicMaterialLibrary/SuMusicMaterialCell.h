@@ -9,6 +9,8 @@
 
 #import <UIKit/UIKit.h>
 
+#import "SuMusicMaterial.h"
+
 NS_ASSUME_NONNULL_BEGIN
 
 @interface SuMusicMaterialCell : UICollectionViewCell
@@ -16,8 +18,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// 素材对象（由数据源绑定）
 @property (nonatomic, strong) SuMusicMaterial *material;
 
-/// 是否处于选中状态（控制底部选中圆点颜色）
-@property (nonatomic, assign) BOOL selected;
+// 说明：selected 由 UICollectionViewCell 继承提供，子类不再重复声明，
+// 避免与父类属性声明冲突（-Wproperty-attribute-mismatch / -Wobjc-property-synthesis）。
 
 /// 用素材配置 Cell：加载缩略图、设置文件名、类型角标、播放键
 /// @param material 素材对象
