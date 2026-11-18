@@ -163,7 +163,7 @@ static NSString * const SuMusicCellReuseIdentifier = @"SuMusicMaterialCell";
     SuMusicMaterial *material = self.materials[indexPath.row];
 
     // 回显选中状态
-    cell.selected = [self.isMaterialSelected:material];
+    cell.selected = [self isMaterialSelected:material];
     [cell configureWithMaterial:material thumbnailSize:SuMusicThumbnailSize];
     return cell;
 }
@@ -217,12 +217,14 @@ static NSString * const SuMusicCellReuseIdentifier = @"SuMusicMaterialCell";
 #pragma mark - 导入
 
 - (void)handleImport:(id)sender {
-    // 复用现有 UIDocumentPickerViewController 流程，允许导入图片与视频
+    // 复用现有 UIDocumentPickerViewController 流程，允许导入图片与视频。
+    // 注意：initWithDocumentTypes:inMode: 自 iOS 14 起废弃（-Werror 下会编译失败），
+    // 改用推荐的 initForOpeningContentTypes:asCopy:，asCopy:YES 保持「导入即复制一份」的原有行为。
     UIDocumentPickerViewController *picker =
-    [[UIDocumentPickerViewController alloc] initWithDocumentTypes:@[
-        UTTypeImage.identifier,
-        UTTypeMovie.identifier,
-    ] inMode:UIDocumentPickerModeImport];
+    [[UIDocumentPickerViewController alloc] initForOpeningContentTypes:@[
+        UTTypeImage,
+        UTTypeMovie,
+    ] asCopy:YES];
     picker.delegate = self;
     [self presentViewController:picker animated:YES completion:nil];
 }
