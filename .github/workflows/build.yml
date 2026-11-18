@@ -24,8 +24,8 @@ jobs:
           # 改用 THEOS 环境变量指向 /opt/theos（Theos 原生支持）。
           echo "THEOS=/opt/theos" >> "$GITHUB_ENV"
           echo "PATH=/opt/theos/bin:$PATH" >> "$GITHUB_ENV"
-          # 下载 iOS / macOS SDK 到 $THEOS/sdks
-          sudo THEOS=/opt/theos /opt/theos/bin/theos-build
+          # 下载最新 iPhoneOS SDK 到 $THEOS/sdks（现代 Theos 用 install-sdk）
+          sudo THEOS=/opt/theos GITHUB_TOKEN="$GITHUB_TOKEN" /opt/theos/bin/install-sdk latest
 
       - name: Build tweak
         run: make CONFIG=release
