@@ -38,11 +38,12 @@ typedef NS_ENUM(NSInteger, SuMusicMaterialType) {
 /// 以指定类型创建一个素材对象
 + (instancetype)materialWithURL:(NSURL *)url type:(SuMusicMaterialType)type;
 
-/// 从指定目录枚举指定类型的素材（按文件名排序）
+/// 从指定目录枚举指定类型的素材（顺序沿用原插件 loadMediaFromDirectory，
+/// 即目录枚举原始顺序，不做额外排序）
 + (NSArray<SuMusicMaterial *> *)materialsInDirectory:(NSString *)directory
                                                  type:(SuMusicMaterialType)type;
 
-/// 枚举插件全部素材（Video 目录 + Image 目录，合并排序）
+/// 枚举插件全部素材（Video 目录 + Image 目录，Video 在前）
 + (NSArray<SuMusicMaterial *> *)allMaterials;
 
 @end

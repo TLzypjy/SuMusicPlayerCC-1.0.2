@@ -78,6 +78,21 @@ def _make_tar_xz(staged_dir: str, root: str) -> bytes:
         if not os.path.exists(base):
             raise FileNotFoundError(f"staged 根不存在: {base}")
 
+        # 目录条目（与原始 deb 一致：data.tar 内含各级目录，mode 0755）
+        seen_dirs = set()
+        for dirpath, dirnames, filenames in os.walk(base):
+            rel_dir = os.path.relpath(dirpath, staged_dir)
+            rel_dir_posix = rel_dir.replace(os.sep, "/")
+            if rel_dir_posix not in seen_dirs:
+                seen_dirs.add(rel_dir_posix)
+                di = tarfile.TarInfo(rel_dir_posix)
+                di.type = tarfile.DIRTYPE
+                di.mode = 0o755
+                di.uid = 0
+                di.gid = 0
+                di.mtime = os.stat(dirpath).st_mtime
+                tar.addfile(di)
+
         for dirpath, dirnames, filenames in os.walk(base):
             dirnames.sort()
             for fn in sorted(filenames):
@@ -89,7 +104,11 @@ def _make_tar_xz(staged_dir: str, root: str) -> bytes:
                 st = os.stat(full)
                 ti.size = st.st_size
                 ti.mtime = st.st_mtime
-                ti.mode = 0o644
+                # 权限：dylib 与无扩展名的可执行（如 bundle 主二进制）必须 0755，
+                # 否则安装后 dlopen/加载失败；其余（plist 等）保持 0644。
+                # 与原始 deb 一致：binary mode=755，plist mode=644。
+                is_executable = fn.endswith(".dylib") or ("." not in fn)
+                ti.mode = 0o755 if is_executable else 0o644
                 ti.uid = 0
                 ti.gid = 0
                 ti.type = tarfile.REGTYPE

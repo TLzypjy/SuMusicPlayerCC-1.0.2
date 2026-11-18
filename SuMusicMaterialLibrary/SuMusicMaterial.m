@@ -10,6 +10,14 @@ static NSString * const SuMusicMaterialRootDirectory = @"/var/mobile/Library/SuM
 static NSString * const SuMusicVideoDirectoryName = @"Video";
 static NSString * const SuMusicImageDirectoryName = @"Image";
 
+// 视频扩展名 / 图片扩展名（与指令一致）
+static NSArray<NSString *> *SuMusicVideoExtensions(void) {
+    return @[@"mp4", @"mov", @"m4v"];
+}
+static NSArray<NSString *> *SuMusicImageExtensions(void) {
+    return @[@"jpg", @"jpeg", @"png", @"heic"];
+}
+
 // 类扩展：头文件中 fileURL 对外为 readonly，工厂方法内部需要赋值，
 // 这里在实现文件内重新声明为 readwrite（对外接口仍保持 readonly）。
 @interface SuMusicMaterial ()
@@ -43,24 +51,20 @@ static NSString * const SuMusicImageDirectoryName = @"Image";
         return @[];
     }
 
-    // 按文件名排序，保证网格展示顺序稳定
-    NSArray<NSString *> *sorted = [items sortedArrayUsingComparator:^(NSString *a, NSString *b) {
-        return [a compare:b options:NSAnchoredSearch];
-    }];
+    // 排序沿用原插件 loadMediaFromDirectory 的现有顺序：
+    // 原实现对目录枚举结果不排序，直接按 contentsOfDirectoryAtPath:error: 返回
+    // 的顺序使用，这里保持一致，保证网格展示顺序与改造前的列表顺序一致。
+    NSArray<NSString *> *allowedExtensions = (type == SuMusicMaterialTypeVideo)
+        ? SuMusicVideoExtensions()
+        : SuMusicImageExtensions();
 
-    for (NSString *name in sorted) {
+    for (NSString *name in items) {
         NSString *fullPath = [directory stringByAppendingPathComponent:name];
         NSURL *url = [NSURL fileURLWithPath:fullPath];
 
-        // 简单扩展名判断，过滤非媒体文件
+        // 扩展名过滤（与指令一致）
         NSString *ext = name.pathExtension.lowercaseString;
-        BOOL looksLikeMedia = YES;
-        if (type == SuMusicMaterialTypeVideo) {
-            looksLikeMedia = [@[@"mp4", @"mov", @"m4v", @"mkv", @"avi", @"3gp", @"webm", @"caf"] containsObject:ext];
-        } else {
-            looksLikeMedia = [@[@"png", @"jpg", @"jpeg", @"gif", @"heic", @"heif", @"bmp", @"webp"] containsObject:ext];
-        }
-        if (!looksLikeMedia) {
+        if (![allowedExtensions containsObject:ext]) {
             continue;
         }
 
