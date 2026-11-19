@@ -33,7 +33,7 @@ jobs:
             | tar -xJf - -C "$HOME/theos/toolchain/"
           THEOS="$HOME/theos" "$HOME/theos/bin/install-sdk" latest
           mkdir -p "$HOME/.local/bin"
-          curl -L https://github.com/theos/ldid/releases/latest/download/ldid \
+          curl -L https://github.com/ProcursusTeam/ldid/releases/latest/download/ldid_linux_x86_64 \
             -o "$HOME/.local/bin/ldid"
           chmod +x "$HOME/.local/bin/ldid"
           echo "PATH=$HOME/.local/bin:$PATH" >> "$GITHUB_ENV"
