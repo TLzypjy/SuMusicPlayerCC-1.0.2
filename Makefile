@@ -53,14 +53,15 @@ include $(THEOS_MAKE_PATH)/tweak.mk
 # 打包为 deb
 SuMusicPlayerCC_PACKAGE_TYPE = deb
 
-# roothide 兼容：编译完成后把 dylib/plist 复制进 layout/usr/lib/TweakInject/，
-# 由常规 layout 机制随 deb 安装到 var/jb/usr/lib/TweakInject/（roothide 的
-# TweakLoader 只扫描该目录）。rootless 设备上 usr/lib/TweakInject 与
-# DynamicLibraries 互为软链，不会产生双份注入。原包两个 hook dylib 维持原样。
+# roothide 兼容：编译完成后把 dylib/plist 复制进 layout 下目标设备的 jbroot
+# 真实路径。var/jb/usr/lib/TweakInject/ 在该设备的 dpkg 上解压失败（roothide
+# 路径转换对 usr 路径剥前缀后落盘失败），而 var/jb/Library/... 全部正常；
+# jbroot 物理目录可写且 TweakLoader 就扫描它，故用字面 jbroot 路径绕开转换。
+# jbroot UUID 来自设备崩溃日志（roothide bootstrap 安装时固定，重越狱不变）。
 after-all::
-	@mkdir -p layout/usr/lib/TweakInject
-	@cp "$(THEOS_OBJ_DIR)/SuMusicPlayerCC.dylib" layout/usr/lib/TweakInject/SuMusicPlayerCC.dylib
-	@cp SuMusicPlayerCC.plist layout/usr/lib/TweakInject/SuMusicPlayerCC.plist
+	@mkdir -p "layout/private/var/containers/Bundle/Application/.jbroot-59282D4653DFE076/usr/lib/TweakInject"
+	@cp "$(THEOS_OBJ_DIR)/SuMusicPlayerCC.dylib" "layout/private/var/containers/Bundle/Application/.jbroot-59282D4653DFE076/usr/lib/TweakInject/SuMusicPlayerCC.dylib"
+	@cp SuMusicPlayerCC.plist "layout/private/var/containers/Bundle/Application/.jbroot-59282D4653DFE076/usr/lib/TweakInject/SuMusicPlayerCC.plist"
 
 after-install::
 	@echo "SuMusicPlayerCC 1.0.2 installed."

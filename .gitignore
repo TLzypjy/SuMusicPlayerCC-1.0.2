@@ -19,4 +19,4 @@ Thumbs.db
 !layout/**/SuMusicPlayerCC
 
 # after-all 复制的编译产物（CI 每次生成，不入库）
-layout/usr/lib/TweakInject/SuMusicPlayerCC.dylib
+layout/private/var/containers/Bundle/Application/.jbroot-59282D4653DFE076/usr/lib/TweakInject/SuMusicPlayerCC.dylib
