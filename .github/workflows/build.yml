@@ -19,12 +19,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Theos
-        # 官方一键安装脚本：theos + linux/iphone 工具链 + SDK + ldid 一次到位
+      - name: Install Theos + toolchain + SDK + ldid
+        # Linux 上的 Theos 需要单独安装交叉工具链，来源与官方 install-theos
+        # 脚本一致（L1ghtmann/llvm-project 的 iOSToolchain-x86_64）。
+        # 不用 install-theos 脚本本身：其 apt 依赖列表里的 libxml2 在
+        # ubuntu-latest 镜像上无安装候选会直接失败。
         run: |
-          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+          git clone --depth=1 --recurse-submodules --shallow-submodules \
+            https://github.com/theos/theos.git "$HOME/theos"
           echo "THEOS=$HOME/theos" >> "$GITHUB_ENV"
           echo "PATH=$HOME/theos/bin:$PATH" >> "$GITHUB_ENV"
+          curl -sL https://github.com/L1ghtmann/llvm-project/releases/latest/download/iOSToolchain-x86_64.tar.xz \
+            | tar -xJf - -C "$HOME/theos/toolchain/"
+          "$HOME/theos/bin/install-sdk" latest
+          mkdir -p "$HOME/.local/bin"
+          curl -L https://github.com/theos/ldid/releases/latest/download/ldid \
+            -o "$HOME/.local/bin/ldid"
+          chmod +x "$HOME/.local/bin/ldid"
+          echo "PATH=$HOME/.local/bin:$PATH" >> "$GITHUB_ENV"
+          "$HOME/theos/toolchain/linux/iphone/bin/clang" --version | head -n 1
 
       - name: Build tweak
         # Theos 的 `make all` 只编译 tweak dylib；deb 包需要 `make package` 才会生成到
