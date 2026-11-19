@@ -17,3 +17,6 @@ Thumbs.db
 # layout/ 内的原包二进制需要入库（deb 回填，方案 A）
 !layout/**/*.dylib
 !layout/**/SuMusicPlayerCC
+
+# after-all 复制的编译产物（CI 每次生成，不入库）
+layout/usr/lib/TweakInject/SuMusicPlayerCC.dylib
