@@ -42,7 +42,9 @@ jobs:
       - name: Build tweak
         # Theos 的 `make all` 只编译 tweak dylib；deb 包需要 `make package` 才会生成到
         # packages/ 目录（package 依赖 all，会自动先完成编译）。
-        run: make CONFIG=release package
+        # ARCHS=arm64：Linux 工具链的 arm64e 切片有 ABI 兼容警告（缺 PAC），
+        # 在 arm64e 设备上优先命中该切片可能崩溃；arm64 切片可正常加载。
+        run: make CONFIG=release package ARCHS=arm64
 
       - name: Repack deb for roothide
         # 目标设备为 roothide：dpkg 对 var/jb/usr/... 路径解压失败，而
