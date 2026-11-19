@@ -20,43 +20,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Theos
+        # 官方一键安装脚本：theos + linux/iphone 工具链 + SDK + ldid 一次到位
         run: |
-          # 必须带 --recurse-submodules：theos 通过子模块管理 vendor/include、vendor/lib 等，
-          # 缺失会导致构建阶段 vendor 检查直接报错终止。
-          git clone --depth=1 --recurse-submodules --shallow-submodules \
-            https://github.com/theos/theos.git "$HOME/theos"
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
           echo "THEOS=$HOME/theos" >> "$GITHUB_ENV"
           echo "PATH=$HOME/theos/bin:$PATH" >> "$GITHUB_ENV"
-          # 下载最新 iPhoneOS SDK（theos install-sdk 在 Linux 上同样可用）
-          THEOS="$HOME/theos" "$HOME/theos/bin/install-sdk" latest
-
-      - name: Install ldid
-        run: |
-          mkdir -p "$HOME/.local/bin"
-          curl -L https://github.com/theos/ldid/releases/latest/download/ldid \
-            -o "$HOME/.local/bin/ldid"
-          chmod +x "$HOME/.local/bin/ldid"
-          echo "PATH=$HOME/.local/bin:$PATH" >> "$GITHUB_ENV"
-
-      - name: Install Linux iOS toolchain
-        # Linux 上的 Theos 不自带编译器，需要从 theos/toolchain releases 安装
-        # linux/iphone 交叉工具链（clang 等）到 $THEOS/toolchain/linux/iphone。
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          URL=$(gh api repos/theos/toolchain/releases/latest \
-            --jq '.assets[] | select(.name | test("ios-linux")) | .browser_download_url' | head -n 1)
-          echo "toolchain asset: $URL"
-          mkdir -p /tmp/tc "$HOME/theos/toolchain/linux/iphone"
-          curl -L "$URL" -o /tmp/tc.tar.xz
-          tar -xf /tmp/tc.tar.xz -C /tmp/tc
-          # 兼容两种压缩包布局：根下直接是 bin/lib，或根下有一个子目录
-          if [ -d /tmp/tc/bin ]; then
-            cp -a /tmp/tc/. "$HOME/theos/toolchain/linux/iphone/"
-          else
-            cp -a /tmp/tc/*/ "$HOME/theos/toolchain/linux/iphone/"
-          fi
-          "$HOME/theos/toolchain/linux/iphone/bin/clang" --version | head -n 1
 
       - name: Build tweak
         # Theos 的 `make all` 只编译 tweak dylib；deb 包需要 `make package` 才会生成到
