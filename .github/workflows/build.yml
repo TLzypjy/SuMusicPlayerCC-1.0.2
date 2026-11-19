@@ -38,6 +38,24 @@ jobs:
           chmod +x "$HOME/.local/bin/ldid"
           echo "PATH=$HOME/.local/bin:$PATH" >> "$GITHUB_ENV"
 
+      - name: Install Linux iOS toolchain
+        # Linux 上的 Theos 不自带编译器，需要从 theos/toolchain releases 安装
+        # linux/iphone 交叉工具链（clang 等）到 $THEOS/toolchain/linux/iphone。
+        run: |
+          URL=$(gh api repos/theos/toolchain/releases/latest \
+            --jq '.assets[] | select(.name | test("ios-linux")) | .browser_download_url' | head -n 1)
+          echo "toolchain asset: $URL"
+          mkdir -p /tmp/tc "$HOME/theos/toolchain/linux/iphone"
+          curl -L "$URL" -o /tmp/tc.tar.xz
+          tar -xf /tmp/tc.tar.xz -C /tmp/tc
+          # 兼容两种压缩包布局：根下直接是 bin/lib，或根下有一个子目录
+          if [ -d /tmp/tc/bin ]; then
+            cp -a /tmp/tc/. "$HOME/theos/toolchain/linux/iphone/"
+          else
+            cp -a /tmp/tc/*/ "$HOME/theos/toolchain/linux/iphone/"
+          fi
+          "$HOME/theos/toolchain/linux/iphone/bin/clang" --version | head -n 1
+
       - name: Build tweak
         # Theos 的 `make all` 只编译 tweak dylib；deb 包需要 `make package` 才会生成到
         # packages/ 目录（package 依赖 all，会自动先完成编译）。
