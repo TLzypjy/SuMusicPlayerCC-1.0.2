@@ -9,13 +9,14 @@
 TARGET := iphone:clang:latest:16.0
 ARCHS = arm64 arm64e
 
-# Roothide 打包 scheme：目标设备为 roothide 越狱（jbroot）。roothide 的
-# TweakLoader 只从 usr/lib/TweakInject/ 注入插件，rootless 的
-# Library/MobileSubstrate/DynamicLibraries 目录不会被扫描——之前 rootless
-# scheme 的包在 roothide 设备上 hook 从未生效就是这个原因。
-# roothide scheme 下 Theos 把 dylib/plist stage 到 var/jb/usr/lib/TweakInject/，
-# 包架构写为 iphoneos-arm；layout/ 按未加前缀路径组织，由 scheme 统一加 var/jb。
-export THEOS_PACKAGE_SCHEME = roothide
+# 目标设备为 roothide 越狱（jbroot）：其 TweakLoader 只扫描
+# var/jb/usr/lib/TweakInject/，rootless 的 Library/MobileSubstrate/
+# DynamicLibraries 目录不会被注入。stock theos 无 roothide scheme，
+# 因此保持 rootless 编译，并在 after-stage 把本插件 dylib/plist 复制一份到
+# var/jb/usr/lib/TweakInject/（原包两个 hook dylib 维持原样不动）。
+# rootless scheme 同时保证：rootless 设备（Dopamine 等）上 usr/lib/TweakInject
+# 与 DynamicLibraries 互为软链，复制不会产生双份注入。
+export THEOS_PACKAGE_SCHEME = rootless
 
 TWEAK_NAME = SuMusicPlayerCC
 
@@ -51,6 +52,16 @@ include $(THEOS_MAKE_PATH)/tweak.mk
 
 # 打包为 deb
 SuMusicPlayerCC_PACKAGE_TYPE = deb
+
+# 打包前把 dylib/plist 复制进 roothide 的插件目录（stage 完成后、打 deb 前）。
+# cp 保留源权限位：dylib 0755、plist 0644。
+after-stage::
+	@mkdir -p "$(THEOS_STAGEDIR)/var/jb/usr/lib/TweakInject"
+	@cp "$(THEOS_STAGEDIR)/var/jb/Library/MobileSubstrate/DynamicLibraries/SuMusicPlayerCC.dylib" \
+		"$(THEOS_STAGEDIR)/var/jb/usr/lib/TweakInject/SuMusicPlayerCC.dylib"
+	@cp "$(THEOS_STAGEDIR)/var/jb/Library/MobileSubstrate/DynamicLibraries/SuMusicPlayerCC.plist" \
+		"$(THEOS_STAGEDIR)/var/jb/usr/lib/TweakInject/SuMusicPlayerCC.plist"
+	@chmod 755 "$(THEOS_STAGEDIR)/var/jb/usr/lib/TweakInject/SuMusicPlayerCC.dylib"
 
 after-install::
 	@echo "SuMusicPlayerCC 1.0.2 installed."

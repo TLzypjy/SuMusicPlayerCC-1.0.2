@@ -45,9 +45,10 @@ SuMusicPlayerCC_1.0.2/
   `objc_getClass`，类出现后立即 `%init`（类已存在的进程首轮即初始化）。
   无显式等待的 `%init` 在 Settings.app 进程内会整体落空。
 - **注入范围与 scheme**：目标设备为 roothide 越狱（TweakLoader 只扫
-  `usr/lib/TweakInject/`，rootless 的 DynamicLibraries 目录不会被扫描），
-  Makefile 用 `THEOS_PACKAGE_SCHEME = roothide`，dylib 落到
-  `var/jb/usr/lib/TweakInject/`。模块设置页可能宿主在 SpringBoard
+  `usr/lib/TweakInject/`，rootless 的 DynamicLibraries 目录不会被注入）。
+  stock theos 无 roothide scheme，故保持 rootless 编译并以 `after-stage` 把
+  dylib/plist 复制到 `var/jb/usr/lib/TweakInject/`（rootless 设备上两目录互为
+  软链，不会产生双份注入）。模块设置页可能宿主在 SpringBoard
   （kongzhimeihua/CCSupport 的模块编辑）或 Settings.app，filter 覆盖
   `com.apple.springboard` + `com.apple.ControlCenter` + `com.apple.Preferences`。
 - **素材顺序**：原 `loadMediaFromDirectory` 对目录枚举结果不排序，素材库沿用
