@@ -9,12 +9,13 @@
 TARGET := iphone:clang:latest:16.0
 ARCHS = arm64 arm64e
 
-# Rootless 打包 scheme：必须显式指定，否则 Theos 按 rootful 处理，
-# dylib/plist 会被 stage 到根路径 Library/MobileSubstrate/（rootless 设备
-# 根文件系统只读，安装即报 error creating directory）。
-# rootless scheme 下 Theos 自动把构建产物 stage 到 var/jb/ 并以
-# iphoneos-arm64 作为包架构；layout/ 仍按仓库内原样路径安装。
-export THEOS_PACKAGE_SCHEME = rootless
+# Roothide 打包 scheme：目标设备为 roothide 越狱（jbroot）。roothide 的
+# TweakLoader 只从 usr/lib/TweakInject/ 注入插件，rootless 的
+# Library/MobileSubstrate/DynamicLibraries 目录不会被扫描——之前 rootless
+# scheme 的包在 roothide 设备上 hook 从未生效就是这个原因。
+# roothide scheme 下 Theos 把 dylib/plist stage 到 var/jb/usr/lib/TweakInject/，
+# 包架构写为 iphoneos-arm；layout/ 按未加前缀路径组织，由 scheme 统一加 var/jb。
+export THEOS_PACKAGE_SCHEME = roothide
 
 TWEAK_NAME = SuMusicPlayerCC
 

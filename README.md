@@ -44,9 +44,12 @@ SuMusicPlayerCC_1.0.2/
   dylib 构造阶段目标类尚未注册——`%ctor` 用 0.5s 主队列定时器轮询
   `objc_getClass`，类出现后立即 `%init`（类已存在的进程首轮即初始化）。
   无显式等待的 `%init` 在 Settings.app 进程内会整体落空。
-- **注入范围**：CCSupport 可能在 Settings.app 内加载模块设置页（原包
-  FirstKillHook.plist 的 filter 同样含 `com.apple.Preferences`），因此新 dylib
-  filter 为 `com.apple.ControlCenter` + `com.apple.Preferences`。
+- **注入范围与 scheme**：目标设备为 roothide 越狱（TweakLoader 只扫
+  `usr/lib/TweakInject/`，rootless 的 DynamicLibraries 目录不会被扫描），
+  Makefile 用 `THEOS_PACKAGE_SCHEME = roothide`，dylib 落到
+  `var/jb/usr/lib/TweakInject/`。模块设置页可能宿主在 SpringBoard
+  （kongzhimeihua/CCSupport 的模块编辑）或 Settings.app，filter 覆盖
+  `com.apple.springboard` + `com.apple.ControlCenter` + `com.apple.Preferences`。
 - **素材顺序**：原 `loadMediaFromDirectory` 对目录枚举结果不排序，素材库沿用
   `contentsOfDirectoryAtPath:` 原始顺序（指令 3.4：与改造前列表顺序一致）。
 
@@ -92,11 +95,12 @@ SuMusicPlayerCC_1.0.2/
 ## 构建（GitHub Actions）
 
 推送到 main 后 CI 自动构建：`make CONFIG=release package`（Theos，macOS runner，
-arm64 + arm64e）。Makefile 显式 `export THEOS_PACKAGE_SCHEME = rootless`——
-缺失时 Theos 按 rootful 处理，dylib/plist 会被 stage 到根路径 `Library/...`，
-rootless 设备安装直接报「error creating directory: 文件系统只读」。
-产物 artifact：`com.susu.sumusicplayercc_1.0.2_iphoneos-arm64`（packages/*.deb），
-data.tar 内所有文件必须都在 `var/jb/` 之下。
+arm64 + arm64e）。Makefile 显式 `export THEOS_PACKAGE_SCHEME = roothide`——
+roothide 设备只从 `usr/lib/TweakInject/` 注入；layout/ 按未加前缀路径组织，
+由 scheme 统一加 `var/jb`，data.tar 内所有文件必须都在 `var/jb/` 之下
+（出现过两类历史事故：缺 scheme 时 dylib 落到根路径导致安装报只读；
+rootless scheme 下 layout 带前缀导致 `var/jb/var/jb` 双重前缀）。
+产物 artifact：`com.susu.sumusicplayercc_1.0.2_iphoneos-arm`（packages/*.deb）。
 
 本地若有 Theos 环境可执行：
 

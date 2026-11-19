@@ -335,29 +335,37 @@ static void SuMusicPresentMaterialLibraryFromController(id controller) {
 
 /// hook 是否已初始化（防重复 %init）
 static BOOL SuMusicHooksInitialized = NO;
-/// 轮询定时器（类注册后挂起置空）
-static dispatch_source_t SuMusicHookInitTimer;
+
+static void SuMusicScheduleHookInit(void);
+
+/// 尝试初始化 hook；目标类尚未注册时安排下一轮
+static void SuMusicTryInitHooks(void) {
+    if (SuMusicHooksInitialized) {
+        return;
+    }
+    if (objc_getClass("SuMusicPlayerCCSettingsListController") != nil) {
+        %init();
+        SuMusicHooksInitialized = YES;
+        return;
+    }
+    SuMusicScheduleHookInit();
+}
+
+/// 轮询调度：dispatch_after 链（50ms 一次），全程无 dispatch_suspend/
+/// dispatch_release——挂起的 dispatch 对象一旦被 ARC 释放会触发 libdispatch
+/// 「Release of a suspended object」abort，直接崩宿主进程。
+/// objc_getClass 为哈希查找，20 次/秒成本可忽略；全局队列避免被主线程建页挤后。
+static void SuMusicScheduleHookInit(void) {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.05 * NSEC_PER_SEC)),
+                   dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        SuMusicTryInitHooks();
+    });
+}
 
 %ctor {
     // CC 模块 bundle 由 CCSupport 按需加载：在设置里点开模块页时才把
-    // SuMusicPlayerCC.bundle 载入宿主进程（Settings.app）。dylib 构造阶段该类
-    // 尚未注册，直接 %init 会落空；轮询等待类出现后立即初始化。
-    // 放全局队列而非主队列：建页期间主线程繁忙会把主队列任务挤后，导致
-    // 首次进页面时 hook 仍未生效；MSHook/ObjC 运行时调用线程安全。
-    // 类已存在的进程（如 ControlCenter）首轮即初始化。
-    SuMusicHookInitTimer = dispatch_source_create(
-        DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0));
-    dispatch_source_set_timer(SuMusicHookInitTimer, DISPATCH_TIME_NOW, 0.05 * NSEC_PER_SEC, 0.01 * NSEC_PER_SEC);
-    dispatch_source_set_event_handler(SuMusicHookInitTimer, ^{
-        if (SuMusicHooksInitialized) {
-            return; // 已初始化，等挂起生效
-        }
-        if (objc_getClass("SuMusicPlayerCCSettingsListController") != nil) {
-            %init();
-            SuMusicHooksInitialized = YES;
-            dispatch_suspend(SuMusicHookInitTimer);
-            SuMusicHookInitTimer = nil;
-        }
-    });
-    dispatch_resume(SuMusicHookInitTimer);
+    // SuMusicPlayerCC.bundle 载入宿主进程。dylib 构造阶段目标类尚未注册，
+    // 直接 %init 会落空；轮询等类出现后立即初始化。
+    // 类已存在的进程首轮即初始化。
+    SuMusicScheduleHookInit();
 }
