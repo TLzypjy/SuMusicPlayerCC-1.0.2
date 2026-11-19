@@ -19,6 +19,7 @@
 #import <UIKit/UIKit.h>
 #import <QuartzCore/QuartzCore.h>
 #import <CoreFoundation/CoreFoundation.h>
+#import <objc/runtime.h>
 
 #import "SuMusicMaterial.h"
 #import "SuMusicMaterialLibraryViewController.h"
@@ -115,6 +116,7 @@ static void SuMusicWriteBackSelection(SuMusicMaterial *material) {
 - (NSString *)name;
 - (NSString *)identifier;
 - (SEL)buttonAction;
+- (void)setButtonAction:(SEL)action;
 - (NSString *)cell;
 - (BOOL)isGroupHeader;
 @end
@@ -182,6 +184,30 @@ static BOOL SuMusicIsMediaRow(UITableViewCell *cell) {
     return NO;
 }
 
+#pragma mark - 素材库呈现
+
+/// 从设置页 present 素材库（didSelect 拦截与 buttonAction 替换共用）
+static void SuMusicPresentMaterialLibraryFromController(id controller) {
+    if (!controller || ![controller respondsToSelector:@selector(presentViewController:animated:completion:)]) {
+        return;
+    }
+    // 从原插件读取当前选中，做初始蓝点
+    SuMusicMaterial *currentSelected = SuMusicCurrentSelectedMaterial();
+
+    SuMusicMaterialLibraryViewController *library =
+    [SuMusicMaterialLibraryViewController materialLibraryViewControllerWithSelected:currentSelected];
+
+    // 选中结果回写：写回原插件选中状态并触发刷新（选中即时回调，无需等待关闭）
+    library.selectionBlock = ^(SuMusicMaterial *selected) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            SuMusicWriteBackSelection(selected);
+        });
+    };
+
+    library.modalPresentationStyle = UIModalPresentationFullScreen;
+    [controller presentViewController:library animated:YES completion:nil];
+}
+
 #pragma mark - 设置页 hook
 
 /// 前向声明被 hook 的插件内类。
@@ -226,6 +252,16 @@ static BOOL SuMusicIsMediaRow(UITableViewCell *cell) {
         }
     }
 
+    // 入口行动作替换：把原插件 toggleMediaGroup 换成素材库呈现。
+    // 原插件分组头动作无参调用（v16@0:8），%new 方法 suMusicPresentMediaLibrary 签名一致；
+    // 这样即使点击链路不走 tableView:didSelectRowAtIndexPath:，点击也直接进素材库。
+    {
+        id<SuMusicSpecifierInfo> mediaSpecifier = filtered[mediaIndex];
+        if ([mediaSpecifier respondsToSelector:@selector(setButtonAction:)]) {
+            [mediaSpecifier setButtonAction:@selector(suMusicPresentMediaLibrary)];
+        }
+    }
+
     NSRange removalRange;
     if (nextGroupIndex != NSNotFound) {
         removalRange = NSMakeRange(mediaIndex + 1, nextGroupIndex - mediaIndex - 1);
@@ -249,7 +285,10 @@ static BOOL SuMusicIsMediaRow(UITableViewCell *cell) {
 }
 
 - (void)toggleMediaGroup {
-    // 忽略切换，展开永不成立
+    // 原「展开子行」动作被整体替换为素材库呈现：无论点击链路走
+    // didSelect 拦截、buttonAction 替换还是原动作本身，都收敛到素材库；
+    // 展开永不发生（配合 mediaGroupExpanded 恒 NO 与 specifiers 过滤）。
+    SuMusicPresentMaterialLibraryFromController(self);
 }
 
 /// 构建 cell 时：对「媒体文件选择」入口行，把下拉箭头换成右箭头。
@@ -279,25 +318,46 @@ static BOOL SuMusicIsMediaRow(UITableViewCell *cell) {
 
     if (SuMusicIsMediaSpecifier(specifier) || SuMusicIsMediaRow(cell)) {
         [tableView deselectRowAtIndexPath:indexPath animated:YES];
-
-        // 从原插件读取当前选中，做初始蓝点
-        SuMusicMaterial *currentSelected = SuMusicCurrentSelectedMaterial();
-
-        SuMusicMaterialLibraryViewController *library =
-        [SuMusicMaterialLibraryViewController materialLibraryViewControllerWithSelected:currentSelected];
-
-        // 选中结果回写：写回原插件选中状态并触发刷新（选中即时回调，无需等待关闭）
-        library.selectionBlock = ^(SuMusicMaterial *selected) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                SuMusicWriteBackSelection(selected);
-            });
-        };
-
-        library.modalPresentationStyle = UIModalPresentationFullScreen;
-        [self presentViewController:library animated:YES completion:nil];
+        SuMusicPresentMaterialLibraryFromController(self);
         return;
     }
     %orig();
 }
 
+/// 素材库呈现（经 specifier 的 buttonAction 调用，无参签名与原 toggleMediaGroup 一致）
+%new - (void)suMusicPresentMediaLibrary {
+    SuMusicPresentMaterialLibraryFromController(self);
+}
+
 %end
+
+#pragma mark - hook 初始化
+
+/// hook 是否已初始化（防重复 %init）
+static BOOL SuMusicHooksInitialized = NO;
+/// 轮询定时器（类注册后挂起置空）
+static dispatch_source_t SuMusicHookInitTimer;
+
+%ctor {
+    // CC 模块 bundle 由 CCSupport 按需加载：在设置里点开模块页时才把
+    // SuMusicPlayerCC.bundle 载入宿主进程（Settings.app）。dylib 构造阶段该类
+    // 尚未注册，直接 %init 会落空；轮询等待类出现后立即初始化。
+    // 放全局队列而非主队列：建页期间主线程繁忙会把主队列任务挤后，导致
+    // 首次进页面时 hook 仍未生效；MSHook/ObjC 运行时调用线程安全。
+    // 类已存在的进程（如 ControlCenter）首轮即初始化。
+    SuMusicHookInitTimer = dispatch_source_create(
+        DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0));
+    dispatch_source_set_timer(SuMusicHookInitTimer, DISPATCH_TIME_NOW, 0.05 * NSEC_PER_SEC, 0.01 * NSEC_PER_SEC);
+    dispatch_source_set_event_handler(SuMusicHookInitTimer, ^{
+        if (SuMusicHooksInitialized) {
+            return; // 已初始化，等挂起生效
+        }
+        if (objc_getClass("SuMusicPlayerCCSettingsListController") != nil) {
+            %init();
+            SuMusicHooksInitialized = YES;
+            dispatch_suspend(SuMusicHookInitTimer);
+            SuMusicHookInitTimer = nil;
+        }
+    });
+    dispatch_resume(SuMusicHookInitTimer);
+}

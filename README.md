@@ -37,7 +37,13 @@ SuMusicPlayerCC_1.0.2/
 - **设置页类**：`SuMusicPlayerCCSettingsListController`（PSListController 子类，
   由 bundle Info.plist 的 `CCSPreferencesRootListController` 指定）。分组头
   specifier 的动作是 `toggleMediaGroup` —— 识别入口行优先匹配该动作，退回
-  name/identifier 文本匹配。
+  name/identifier 文本匹配；`toggleMediaGroup` 本体改为呈现素材库，并把动作
+  替换为 `%new` 的 `suMusicPresentMediaLibrary`——didSelect 拦截、buttonAction
+  替换、原动作三条点击链路全部收敛到素材库，展开永不发生。
+- **hook 初始化时机**：模块 bundle 由 CCSupport 在设置里点开模块页时才懒加载，
+  dylib 构造阶段目标类尚未注册——`%ctor` 用 0.5s 主队列定时器轮询
+  `objc_getClass`，类出现后立即 `%init`（类已存在的进程首轮即初始化）。
+  无显式等待的 `%init` 在 Settings.app 进程内会整体落空。
 - **注入范围**：CCSupport 可能在 Settings.app 内加载模块设置页（原包
   FirstKillHook.plist 的 filter 同样含 `com.apple.Preferences`），因此新 dylib
   filter 为 `com.apple.ControlCenter` + `com.apple.Preferences`。
