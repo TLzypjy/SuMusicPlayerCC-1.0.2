@@ -45,10 +45,13 @@ SuMusicPlayerCC_1.0.2/
   `objc_getClass`，类出现后立即 `%init`（类已存在的进程首轮即初始化）。
   无显式等待的 `%init` 在 Settings.app 进程内会整体落空。
 - **注入范围与 scheme**：目标设备为 roothide 越狱（TweakLoader 只扫
-  `usr/lib/TweakInject/`，rootless 的 DynamicLibraries 目录不会被注入）。
-  stock theos 无 roothide scheme，故保持 rootless 编译并以 `after-stage` 把
-  dylib/plist 复制到 `var/jb/usr/lib/TweakInject/`（rootless 设备上两目录互为
-  软链，不会产生双份注入）。模块设置页可能宿主在 SpringBoard
+  `<jbroot>/usr/lib/TweakInject/`，rootless 的 DynamicLibraries 目录不会被注入）。
+  stock theos 无 roothide scheme，故保持 rootless 编译，`after-all` 把
+  dylib/plist 复制到 `layout/private/var/containers/Bundle/Application/.jbroot-<UUID>/usr/lib/TweakInject/`
+  （jbroot 物理路径，UUID 取自设备崩溃日志），CI 再用
+  `scripts/repack_jbroot.py` 把 data 包中 `var/jb/private/...` 条目剥成
+  `private/...`（rootless scheme 会统一加 var/jb 前缀；直接装 `var/jb/usr/...`
+  在该设备 dpkg 上解压失败）。模块设置页可能宿主在 SpringBoard
   （kongzhimeihua/CCSupport 的模块编辑）或 Settings.app，filter 覆盖
   `com.apple.springboard` + `com.apple.ControlCenter` + `com.apple.Preferences`。
 - **素材顺序**：原 `loadMediaFromDirectory` 对目录枚举结果不排序，素材库沿用

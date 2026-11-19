@@ -42,6 +42,14 @@ jobs:
         # packages/ 目录（package 依赖 all，会自动先完成编译）。
         run: make CONFIG=release package
 
+      - name: Repack deb for roothide
+        # 目标设备为 roothide：dpkg 对 var/jb/usr/... 路径解压失败，而
+        # var/jb/Library/... 正常；TweakLoader 只扫 jbroot 物理路径下的
+        # usr/lib/TweakInject。make 后重打 deb，把 data 包中 var/jb/private/...
+        # 条目（layout 的 jbroot 物理路径，被 rootless scheme 加了前缀）剥成
+        # private/...，直达 <jbroot>/usr/lib/TweakInject。
+        run: python3 scripts/repack_jbroot.py packages/*.deb
+
       - name: Show artifact
         run: ls -lh packages/
 
