@@ -54,14 +54,15 @@ include $(THEOS_MAKE_PATH)/tweak.mk
 SuMusicPlayerCC_PACKAGE_TYPE = deb
 
 # 打包前把 dylib/plist 复制进 roothide 的插件目录（stage 完成后、打 deb 前）。
+# stage 目录为项目下 .theos/_/（THEOS_STAGEDIR 在 after-stage 阶段为空，不能用）。
 # cp 保留源权限位：dylib 0755、plist 0644。
 after-stage::
-	@mkdir -p "$(THEOS_STAGEDIR)/var/jb/usr/lib/TweakInject"
-	@cp "$(THEOS_STAGEDIR)/var/jb/Library/MobileSubstrate/DynamicLibraries/SuMusicPlayerCC.dylib" \
-		"$(THEOS_STAGEDIR)/var/jb/usr/lib/TweakInject/SuMusicPlayerCC.dylib"
-	@cp "$(THEOS_STAGEDIR)/var/jb/Library/MobileSubstrate/DynamicLibraries/SuMusicPlayerCC.plist" \
-		"$(THEOS_STAGEDIR)/var/jb/usr/lib/TweakInject/SuMusicPlayerCC.plist"
-	@chmod 755 "$(THEOS_STAGEDIR)/var/jb/usr/lib/TweakInject/SuMusicPlayerCC.dylib"
+	@mkdir -p ".theos/_/var/jb/usr/lib/TweakInject"
+	@cp ".theos/_/var/jb/Library/MobileSubstrate/DynamicLibraries/SuMusicPlayerCC.dylib" \
+		".theos/_/var/jb/usr/lib/TweakInject/SuMusicPlayerCC.dylib"
+	@cp ".theos/_/var/jb/Library/MobileSubstrate/DynamicLibraries/SuMusicPlayerCC.plist" \
+		".theos/_/var/jb/usr/lib/TweakInject/SuMusicPlayerCC.plist"
+	@chmod 755 ".theos/_/var/jb/usr/lib/TweakInject/SuMusicPlayerCC.dylib"
 
 after-install::
 	@echo "SuMusicPlayerCC 1.0.2 installed."
