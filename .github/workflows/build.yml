@@ -41,6 +41,8 @@ jobs:
       - name: Install Linux iOS toolchain
         # Linux 上的 Theos 不自带编译器，需要从 theos/toolchain releases 安装
         # linux/iphone 交叉工具链（clang 等）到 $THEOS/toolchain/linux/iphone。
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           URL=$(gh api repos/theos/toolchain/releases/latest \
             --jq '.assets[] | select(.name | test("ios-linux")) | .browser_download_url' | head -n 1)
