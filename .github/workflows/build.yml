@@ -11,10 +11,10 @@ concurrency:
 
 jobs:
   build:
-    name: Theos build (iphoneos-arm64)
-    # macos-latest（arm64）当前容量紧张，多次排队 15 分钟后被取消；
-    # 改用 Intel x64 池（macos-15-intel），Theos 交叉编译目标不受宿主架构影响。
-    runs-on: macos-15-intel
+    name: Theos build (linux, iphoneos-arm64)
+    # macOS runner 按 10 倍扣 Actions 分钟数（免费额度已耗尽），
+    # Theos 官方支持在 Linux 上交叉编译 iOS，ubuntu runner 按 1 倍计费。
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,20 +22,21 @@ jobs:
       - name: Install Theos
         run: |
           # 必须带 --recurse-submodules：theos 通过子模块管理 vendor/include、vendor/lib 等，
-          # 缺失会导致 before-all 的 vendor 检查直接报错终止。
-          # --shallow-submodules 让子模块也做浅克隆，加快速度。
-          sudo git clone --depth=1 --recurse-submodules --shallow-submodules https://github.com/theos/theos.git /opt/theos
-          # GitHub Actions macOS 根文件系统只读，无法创建 /theos 软链；
-          # 改用 THEOS 环境变量指向 /opt/theos（Theos 原生支持）。
-          echo "THEOS=/opt/theos" >> "$GITHUB_ENV"
-          echo "PATH=/opt/theos/bin:$PATH" >> "$GITHUB_ENV"
-          # 下载最新 iPhoneOS SDK 到 $THEOS/sdks（现代 Theos 用 install-sdk）
-          sudo THEOS=/opt/theos GITHUB_TOKEN="$GITHUB_TOKEN" /opt/theos/bin/install-sdk latest
+          # 缺失会导致构建阶段 vendor 检查直接报错终止。
+          git clone --depth=1 --recurse-submodules --shallow-submodules \
+            https://github.com/theos/theos.git "$HOME/theos"
+          echo "THEOS=$HOME/theos" >> "$GITHUB_ENV"
+          echo "PATH=$HOME/theos/bin:$PATH" >> "$GITHUB_ENV"
+          # 下载最新 iPhoneOS SDK（theos install-sdk 在 Linux 上同样可用）
+          THEOS="$HOME/theos" "$HOME/theos/bin/install-sdk" latest
 
       - name: Install ldid
-        run: brew install ldid
-        # Theos 打包 tweak dylib 时调用 ldid 做签名，macOS runner 默认 PATH 中没有该工具，
-        # 缺失会导致构建在 Signing 阶段报 "ldid: command not found"（Error 127）。
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -L https://github.com/theos/ldid/releases/latest/download/ldid \
+            -o "$HOME/.local/bin/ldid"
+          chmod +x "$HOME/.local/bin/ldid"
+          echo "PATH=$HOME/.local/bin:$PATH" >> "$GITHUB_ENV"
 
       - name: Build tweak
         # Theos 的 `make all` 只编译 tweak dylib；deb 包需要 `make package` 才会生成到
