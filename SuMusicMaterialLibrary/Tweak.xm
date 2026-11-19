@@ -208,6 +208,28 @@ static void SuMusicPresentMaterialLibraryFromController(id controller) {
     [controller presentViewController:library animated:YES completion:nil];
 }
 
+#pragma mark - 诊断
+
+/// 诊断标记：写 /var/mobile/Library/SuMusicCC/su_<进程名>_<阶段>.txt，
+/// 用于远程定位 hook 链路（注入 → 类注册 → %init → specifier 匹配）。
+static void SuMusicWriteDiagFile(NSString *stage, NSString *content) {
+    @try {
+        NSString *dir = @"/var/mobile/Library/SuMusicCC";
+        [[NSFileManager defaultManager] createDirectoryAtPath:dir
+                                  withIntermediateDirectories:YES
+                                                   attributes:nil
+                                                        error:nil];
+        NSString *proc = [[NSProcessInfo processInfo] processName] ?: @"unknown";
+        NSString *path = [dir stringByAppendingPathComponent:
+                          [NSString stringWithFormat:@"su_%@_%@.txt", proc, stage]];
+        NSString *text = [NSString stringWithFormat:@"%@\n%@",
+                          [NSDate date], content ?: @""];
+        [text writeToFile:path atomically:YES encoding:NSUTF8StringEncoding error:nil];
+    } @catch (id exception) {
+        // 诊断失败不影响功能
+    }
+}
+
 #pragma mark - 设置页 hook
 
 /// 前向声明被 hook 的插件内类。
@@ -228,6 +250,24 @@ static void SuMusicPresentMaterialLibraryFromController(id controller) {
     NSArray *original = %orig();
     if (!original || original.count == 0) {
         return original;
+    }
+
+    // 诊断：dump 本页全部 specifier 的名称/标识/动作，定位「媒体文件选择」行的真实签名
+    @try {
+        NSMutableString *dump = [NSMutableString stringWithFormat:@"count=%lu\n", (unsigned long)original.count];
+        for (NSUInteger i = 0; i < original.count; i++) {
+            id s = original[i];
+            NSString *name = [s respondsToSelector:@selector(name)] ? [s name] : nil;
+            NSString *identifier = [s respondsToSelector:@selector(identifier)] ? [s identifier] : nil;
+            SEL action = [s respondsToSelector:@selector(buttonAction)] ? [s buttonAction] : nil;
+            NSString *cellType = [s respondsToSelector:@selector(cell)] ? [s cell] : nil;
+            [dump appendFormat:@"[%lu] name=%@ identifier=%@ action=%@ cell=%@ class=%@\n",
+             (unsigned long)i, name ?: @"-", identifier ?: @"-",
+             action ? NSStringFromSelector(action) : @"-", cellType ?: @"-",
+             NSStringFromClass([s class])];
+        }
+        SuMusicWriteDiagFile(@"specifiers", dump);
+    } @catch (id exception) {
     }
 
     // 找到「媒体文件选择」入口在数组中的位置
@@ -281,7 +321,10 @@ static void SuMusicPresentMaterialLibraryFromController(id controller) {
 }
 
 - (void)setMediaGroupExpanded:(BOOL)expanded {
-    // 忽略外部设置，保持展开永不成立
+    // 展开永不成立；若原插件点击链路走的是 setter 而非 toggle，则呈现素材库
+    if (expanded) {
+        SuMusicPresentMaterialLibraryFromController(self);
+    }
 }
 
 - (void)toggleMediaGroup {
@@ -346,6 +389,7 @@ static void SuMusicTryInitHooks(void) {
     if (objc_getClass("SuMusicPlayerCCSettingsListController") != nil) {
         %init();
         SuMusicHooksInitialized = YES;
+        SuMusicWriteDiagFile(@"init", @"目标类已注册，hook 初始化完成");
         return;
     }
     SuMusicScheduleHookInit();
@@ -367,5 +411,6 @@ static void SuMusicScheduleHookInit(void) {
     // SuMusicPlayerCC.bundle 载入宿主进程。dylib 构造阶段目标类尚未注册，
     // 直接 %init 会落空；轮询等类出现后立即初始化。
     // 类已存在的进程首轮即初始化。
+    SuMusicWriteDiagFile(@"ctor", @"dylib 注入成功，开始轮询目标类");
     SuMusicScheduleHookInit();
 }
