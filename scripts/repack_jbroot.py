@@ -67,7 +67,8 @@ def decompress_data(name: str, data: bytes) -> bytes:
 
 def restrip_tar(raw: bytes) -> bytes:
     src = tarfile.open(fileobj=io.BytesIO(raw))
-    out = tarfile.open(fileobj=io.BytesIO(), mode="w")
+    outbuf = io.BytesIO()
+    out = tarfile.open(fileobj=outbuf, mode="w")
     for entry in src:
         name = entry.name
         if name.startswith("./"):
@@ -92,13 +93,10 @@ def restrip_tar(raw: bytes) -> bytes:
         else:
             ti.type = entry.type
             ti.size = entry.size
-            link = entry.linkname
             out.addfile(ti, src.extractfile(entry) if entry.isfile() else None)
-    buf = out.getbuffer()
-    result = bytes(buf)
     out.close()
     src.close()
-    return result
+    return outbuf.getvalue()
 
 
 def repack(path: str) -> None:
